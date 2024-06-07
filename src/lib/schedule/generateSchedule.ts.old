@@ -1,0 +1,159 @@
+import type {
+	Activity,
+	Class,
+	OutputSchedule,
+	Period,
+	Schedule,
+	Subject,
+} from "@/lib/schedule-generator/types";
+
+export function generateSchedule(schedule: Schedule): OutputSchedule[] {
+	const {
+		subjects: events,
+		activities,
+		dailyHourLimit: dailyLimit,
+		enrolledClasses: fixedEvents,
+		generations,
+		mutationRate,
+		populationSize,
+	} = schedule;
+
+	console.log("Generating schedule...");
+	const population: OutputSchedule[][] = generateRandomSchedule(
+		events,
+		populationSize,
+	);
+
+	for (let generation = 0; generation < generations; generation++) {
+		const fitnesses = population.map((randomSchedule) =>
+			calculateFitness({ ...schedule, schedule: randomSchedule }),
+		);
+	}
+
+	return [];
+}
+
+function generateRandomSchedule(
+	events: Subject[],
+	populationSize: number,
+): OutputSchedule[][] {
+	const randomSchedule: OutputSchedule[][] = Array.from(
+		{ length: populationSize },
+		() => {
+			return events.map((event) => ({
+				title: event.title,
+				category: event.category,
+				color: event.color,
+				variant:
+					event.classes[Math.floor(Math.random() * event.classes.length)],
+			}));
+		},
+	);
+	return randomSchedule;
+}
+function timeToMinutes(time: string): number {
+	const [hours, minutes] = time.split(":").map(Number);
+	return hours * 60 + minutes;
+}
+
+function calculateFitness({
+	schedule,
+	activities,
+	enrolledClasses: fixedEvents,
+	dailyHourLimit: dailyLimit,
+	alignment,
+	timeAvailability,
+}: Schedule & { schedule: OutputSchedule[] }): number {
+	const dailyMinutes: { [key: string]: number } = {};
+	let fitness = 0;
+
+	//? Check for daily limit
+	for (const { class: variant } of schedule) {
+		for (const period of variant.periods) {
+			const day = period.day;
+			const duration =
+				(timeToMinutes(period.endTime) - timeToMinutes(period.startTime)) /
+				1000 /
+				60;
+			dailyMinutes[day] = (dailyMinutes[day] || 0) + duration;
+			if (dailyMinutes[day] > dailyLimit) {
+				return 0;
+			}
+		}
+		if (eventConflictsWithActivities(variant, activities)) {
+			return 0;
+		}
+		//? Check for event conflicts
+		for (const { class: otherVariant } of schedule) {
+			if (variant !== otherVariant && eventsConflict(variant, otherVariant)) {
+				return 0;
+			}
+		}
+	}
+	//? Check for conflicts with fixed events
+	for (const { class: fixedEvent } of fixedEvents) {
+		for (const { class: variant } of schedule) {
+			if (eventsConflict(variant, fixedEvent)) {
+				return 0;
+			}
+		}
+	}
+
+	fitness = Object.values(dailyMinutes).reduce(
+		(sum, minutes) => sum + (dailyLimit - minutes),
+		0,
+	);
+	//? Check for preferred time and benefit if it starts at the preferred time (e.g. 7:00 for morning) or without a gap from the previous subject if it's not the first subject of the day
+	for (const { class: variant } of schedule) {
+		for (const period of variant.periods) {
+			if (alignment === "start") {
+				if (!Array.isArray(timeAvailability)) {
+					const startTime = timeToMinutes(timeAvailability.startTime);
+					const endTime = timeToMinutes(timeAvailability.endTime);
+					if (
+						timeToMinutes(period.startTime) < startTime ||
+						timeToMinutes(period.endTime) > endTime
+					) {
+						return 0;
+					}
+				}
+			}
+		}
+	}
+
+	return fitness;
+}
+
+function timePeriodsConflict(period1: Period, period2: Period): boolean {
+	if (period1.day !== period2.day) {
+		return false;
+	}
+	return !(
+		timeToMinutes(period1.endTime) <= timeToMinutes(period2.startTime) ||
+		timeToMinutes(period1.startTime) >= timeToMinutes(period2.endTime)
+	);
+}
+function eventsConflict(variant1: Class, variant2: Class) {
+	for (const period1 of variant1.periods) {
+		for (const period2 of variant2.periods) {
+			if (timePeriodsConflict(period1, period2)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+function eventConflictsWithActivities(
+	variant: Class,
+	activities: Activity[],
+): boolean {
+	for (const activity of activities) {
+		for (const activityPeriod of activity.periods) {
+			for (const classPeriod of variant.periods) {
+				if (timePeriodsConflict(activityPeriod, classPeriod)) return true;
+			}
+		}
+	}
+	return false;
+}
