@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Schedule, ScheduleSchema } from "@/lib/schedule-generator/types";
+import type { Schedule } from "@/lib/schedule-generator/types";
 import { PlusIcon } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 
@@ -155,7 +155,7 @@ function PeriodsFormField({
 	});
 	return (
 		<div>
-			{fields.map((field, periodIndex, arr) => (
+			{fields.map((field, periodIndex) => (
 				<div key={field.id} className="space-y-4">
 					{periodIndex > 0 && <div className="mt-4 h-px w-full bg-slate-500" />}
 					<FormField

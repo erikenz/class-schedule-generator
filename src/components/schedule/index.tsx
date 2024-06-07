@@ -2,23 +2,13 @@ import { utnSubjectsPreset } from "@/components/schedule/presets/utn";
 import { ScheduleFormComponent } from "@/components/schedule/schedule-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-	type DayOfWeek,
 	GeneticAlgorithm,
 	type Schedule,
-	type SchedulePenalty,
 	ScheduleSchema,
-	geneticAlgorithm,
 	getPeriodDate,
 } from "@/lib/schedule-generator";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-	addHours,
-	format,
-	getDay,
-	parse,
-	startOfHour,
-	startOfWeek,
-} from "date-fns";
+import { format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import { Calendar, type Event, dateFnsLocalizer } from "react-big-calendar";

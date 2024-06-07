@@ -3,6 +3,9 @@
 	"organizeImports": {
 		"enabled": true
 	},
+	"files": {
+		"ignore": ["*.astro"]
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -12,6 +15,10 @@
 			},
 			"complexity": {
 				"noForEach": "off"
+			},
+			"correctness": {
+				"noUnusedImports": "warn",
+				"noUnusedVariables": "warn"
 			}
 		}
 	}

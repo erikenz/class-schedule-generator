@@ -1,6 +1,4 @@
 import {
-	type Activity,
-	type Class,
 	type DayOfWeek,
 	DayOfWeekEnum,
 	type OutputSchedule,
@@ -8,21 +6,12 @@ import {
 	type Period,
 	type Schedule,
 	type SchedulePenalty,
-	type Subject,
 } from "@/lib/schedule-generator/types";
 
 // Helper functions for time manipulation
 const parseTime = (time: string): number => {
 	const [hours, minutes] = time.split(":").map(Number);
 	return hours * 60 + minutes;
-};
-
-const formatTime = (minutes: number): string => {
-	const hours = Math.floor(minutes / 60)
-		.toString()
-		.padStart(2, "0");
-	const mins = (minutes % 60).toString().padStart(2, "0");
-	return `${hours}:${mins}`;
 };
 
 // Helper function to check if two periods overlap
@@ -84,7 +73,7 @@ class GeneticAlgorithm {
 		let fitness = 0;
 
 		// Create a map to track occupied time slots
-		const occupiedSlots = new Map<DayOfWeek, (string | null)[]>();
+		const occupiedSlots = new Map<DayOfWeek, (symbol | null)[]>();
 		for (const day of Object.values(DayOfWeekEnum._def.values)) {
 			occupiedSlots.set(day, Array(this.config.timeSlots.length).fill(null));
 		}
@@ -113,10 +102,11 @@ class GeneticAlgorithm {
 						(slot) => slot.endTime === period.endTime,
 					);
 					for (let i = startSlotIndex; i <= endSlotIndex; i++) {
-						if (occupiedSlots.get(period.day)[i] !== null) {
+						if (occupiedSlots.get(period.day)?.[i] !== null) {
 							fitness -= this.penalties.constraints;
-						} else {
-							occupiedSlots.get(period.day)[i] = classItem.id;
+						} else if (occupiedSlots.get(period.day)) {
+							// biome-ignore lint/style/noNonNullAssertion: <explanation>
+							occupiedSlots.get(period.day)![i] = classItem.id;
 						}
 					}
 				}
@@ -308,17 +298,17 @@ type Population = Member[];
 
 // Main genetic algorithm function
 function geneticAlgorithm(schedule: Schedule): OutputSchedule[] {
-	const {
-		populationSize,
-		generations,
-		mutationRate,
-		elitismCount,
-		tournamentSize,
-		subjects,
-		activities,
-		enrolledClasses,
-		penalties,
-	} = schedule;
+	// const {
+	// 	populationSize,
+	// 	generations,
+	// 	mutationRate,
+	// 	elitismCount,
+	// 	tournamentSize,
+	// 	subjects,
+	// 	activities,
+	// 	enrolledClasses,
+	// 	penalties,
+	// } = schedule;
 	const population: Population = initializePopulation(schedule);
 	console.log(
 		"file: genetic-algorithm.ts:30 > geneticAlgorithm > population:",
@@ -380,8 +370,7 @@ function geneticAlgorithm(schedule: Schedule): OutputSchedule[] {
 function initializePopulation({
 	populationSize,
 	subjects,
-	activities,
-	enrolledClasses,
+
 	timeSlots,
 }: Schedule): Population {
 	console.log("file: genetic-algorithm.ts:94 > timeSlots:", timeSlots.length);
